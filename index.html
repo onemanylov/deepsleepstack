@@ -72,7 +72,7 @@ h1{font:700 44px/.95 Fraunces,serif;letter-spacing:-.025em;margin:14px 0 8px;tex
 .sub{font-weight:600;color:var(--muted);font-size:15px;line-height:1.4;text-wrap:balance}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
 .chips span{font-size:12px;font-weight:600;border:1px solid var(--hair);background:var(--white);border-radius:999px;padding:5px 10px;color:var(--ink)}
-.tabs{display:flex;justify-content:space-between;gap:8px;margin:18px 0 6px;border-bottom:1px solid var(--hair)}
+.tabs{display:flex;gap:22px;margin:18px 0 6px;border-bottom:1px solid var(--hair)}
 .tabs button{font-size:12px;font-weight:800;letter-spacing:.08em;padding:0;white-space:nowrap;height:44px;color:var(--soft);position:relative;transition:color .2s}
 .tabs button[aria-selected=true]{color:var(--ink)}
 .tabs button[aria-selected=true]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--ink);border-radius:2px}
@@ -226,7 +226,7 @@ footer .cols span{padding:4px 0}
 .shake{animation:shake .4s}
 @keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
 #form .cta{margin-top:4px}
-.fine{text-align:center;font-size:12.5px;color:var(--soft);margin-top:12px}
+.fine{text-align:center;font-size:12.5px;color:var(--muted);margin-top:12px;text-wrap:balance}
 .done{display:none;text-align:center;padding:26px 4px 4px}
 .modal.ok .done{display:block;animation:fade .45s var(--ease)}
 .modal.ok .ask{display:none}
@@ -268,6 +268,7 @@ footer .cols span{padding:4px 0}
   footer .cols{grid-template-columns:repeat(4,max-content);gap:4px 56px}
 }
 @media (max-width:370px){
+  .tabs{gap:14px}
   .tabs button{font-size:11px;letter-spacing:.05em}
   .chips span{font-size:11.5px;padding:5px 9px}
   h1{font-size:40px}
@@ -322,7 +323,7 @@ footer .cols span{padding:4px 0}
   <div class="top">
     <div class="gallery">
       <div class="slides" id="slides" aria-label="Product photos" tabindex="0">
-        <figure><img src="img/jar_square.jpg" width="900" height="900" alt="Deep Sleep Stack gummy jar on a nightstand" fetchpriority="high" decoding="async"></figure>
+        <figure><img src="img/jar_square.jpg" width="900" height="900" alt="Deep Sleep Stack gummy jar on a nightstand" fetchpriority="high"></figure>
         <figure><img src="img/e3.jpg" width="600" height="1075" alt="Holding a jar of Deep Sleep Stack before bed" loading="lazy" decoding="async"></figure>
         <figure><img src="img/h1.jpg" width="600" height="1075" alt="A night calf cramp" loading="lazy" decoding="async" style="object-position:50% 40%"></figure>
         <figure><img src="img/e1.jpg" width="600" height="1075" alt="Grabbing two gummies from the jar" loading="lazy" decoding="async" style="object-position:50% 60%"></figure>
@@ -530,7 +531,7 @@ const $ = id => document.getElementById(id);
 // галерея: свайп по фото, точки, превью на десктопе
 const slides = $("slides"), dots = $("dots"), thumbs = [...$("thumbs").children], N = slides.children.length;
 dots.innerHTML = Array.from({ length: N }, (_, i) => `<button aria-label="Photo ${i + 1}"${i ? "" : ' class="on"'}></button>`).join("");
-let gi = 0, gvia = "swipe", gt;
+let gi = 0, gsent = 0, gvia = "swipe", gt;
 function goSlide(i, via) { gvia = via; slides.scrollTo({ left: i * slides.clientWidth, behavior: "smooth" }); }
 dots.addEventListener("click", e => { const b = e.target.closest("button"); if (b) goSlide([...dots.children].indexOf(b), "dot"); });
 thumbs.forEach((b, i) => b.addEventListener("click", () => goSlide(i, "thumb")));
@@ -540,8 +541,8 @@ slides.addEventListener("scroll", () => {
     gi = i;
     [...dots.children].forEach((d, k) => d.classList.toggle("on", k === i));
     thumbs.forEach((d, k) => d.classList.toggle("on", k === i));
-    clearTimeout(gt); gt = setTimeout(() => { track("gallery", { i: gi, via: gvia }); gvia = "swipe"; }, 250);
   }
+  clearTimeout(gt); gt = setTimeout(() => { if (gi !== gsent) { gsent = gi; track("gallery", { i: gi, via: gvia }); } gvia = "swipe"; }, 200);
 }, { passive: true });
 
 // вкладки в карточке
@@ -569,9 +570,9 @@ $("opts").addEventListener("click", e => {
 
 // окно SOLD OUT
 const modal = $("modal"), form = $("form"), email = $("email"), field = $("field"), err = $("err");
-let lastFocus, focusedOnce, sent = (() => { try { return localStorage.dss_email || ""; } catch { return ""; } })();
+let lastFocus, focusedOnce, mplan = plan, sent = (() => { try { return localStorage.dss_email || ""; } catch { return ""; } })();
 function openModal(p) {
-  const P = PLANS[p];
+  const P = PLANS[p]; mplan = p;
   $("soPlan").textContent = P.name; $("soPrice").textContent = P.line; $("tkPlan").textContent = P.name;
   if (sent) { $("who").textContent = sent; modal.classList.add("ok"); }
   lastFocus = document.activeElement; focusedOnce = false;
@@ -606,7 +607,7 @@ form.addEventListener("submit", e => {
     field.classList.remove("shake"); void field.offsetWidth; field.classList.add("shake");
     email.focus(); return;
   }
-  track("email", { email: v, plan });
+  track("email", { email: v, plan: mplan });
   sent = v; try { localStorage.dss_email = v; } catch {}
   email.blur(); $("who").textContent = v;
   modal.classList.add("ok"); $("sheet").scrollTop = 0; $("back").focus({ preventScroll: true });
@@ -625,7 +626,7 @@ document.querySelectorAll("#faq details").forEach(d => {
   s.addEventListener("click", e => {
     if (!a.animate) return; e.preventDefault();
     if (d.open) { const h = a.offsetHeight; a.animate([{ height: h + "px", opacity: 1 }, { height: "0px", opacity: 0 }], { duration: 260, easing: "ease-out" }).onfinish = () => d.open = false; }
-    else { d.open = true; const h = a.offsetHeight; a.animate([{ height: "0px", opacity: 0 }, { height: h + "px", opacity: 1 }], { duration: 300, easing: "cubic-bezier(.2,.8,.2,1)" }); track("faq", { q: [...d.parentNode.children].indexOf(d) }); }
+    else { d.open = true; const h = a.offsetHeight; a.animate([{ height: "0px", opacity: 0 }, { height: h + "px", opacity: 1 }], { duration: 300, easing: "cubic-bezier(.2,.8,.2,1)" }); track("faq", { i: [...d.parentNode.children].indexOf(d) }); }
   });
 });
 
