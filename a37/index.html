@@ -523,7 +523,8 @@ const SID = (() => { try { return localStorage.dss_sid || (localStorage.dss_sid 
 function track(ev, extra) {
   const body = JSON.stringify({ ev, acc: ACC, sid: SID, ref: document.referrer, q: location.search, ts: Date.now(), ...extra });
   try {  // сбой отправки не должен ломать кнопки
-    if (!navigator.sendBeacon || !navigator.sendBeacon(API, body)) fetch(API, { method: "POST", body, keepalive: true }).catch(() => {});
+    // fetch с keepalive основной: sendBeacon режут блокировщики (в Helium бикон «уходил», но не доходил)
+    fetch(API, { method: "POST", body, keepalive: true }).catch(() => { try { navigator.sendBeacon && navigator.sendBeacon(API, body); } catch {} });
   } catch {}
 }
 track("view");
