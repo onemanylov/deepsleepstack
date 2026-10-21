@@ -516,13 +516,14 @@ footer .cols span{padding:4px 0}
 
 <script>
 // Фейк-дверь: считаем визиты и клики «купить», покупка → «распродано, оставь email».
-// Аккаунт-источник — из пути (deepsleepstack.com/a17) или ?a=; события уходят на /api/e (Cloudflare Worker).
+// Аккаунт-источник — из пути (deepsleepstack.com/a17) или ?a=; события уходят в Cloudflare Worker dss-counter (D1).
+const API = "https://dss-counter.in671.workers.dev/api/e";
 const ACC = (location.pathname.match(/\/(a\d+)/) || [])[1] || new URLSearchParams(location.search).get("a") || "direct";
 const SID = (() => { try { return localStorage.dss_sid || (localStorage.dss_sid = Math.random().toString(36).slice(2)); } catch { return "na"; } })();
 function track(ev, extra) {
   const body = JSON.stringify({ ev, acc: ACC, sid: SID, ref: document.referrer, q: location.search, ts: Date.now(), ...extra });
   try {  // сбой отправки не должен ломать кнопки
-    if (!navigator.sendBeacon || !navigator.sendBeacon("/api/e", body)) fetch("/api/e", { method: "POST", body, keepalive: true }).catch(() => {});
+    if (!navigator.sendBeacon || !navigator.sendBeacon(API, body)) fetch(API, { method: "POST", body, keepalive: true }).catch(() => {});
   } catch {}
 }
 track("view");
